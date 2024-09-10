@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0066)https://static.us.edusercontent.com/files/NJ3fac61dpOrcWX1B1DyZasf -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <style>
+    body {
+      background-color: #404040;
+      background-color: white;
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+      background-color: #bac3c3;
+    }
+    h1, h2, h3, h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+    kbd {
+      color: #121212;
+    }
+    blockquote {
+      color: #000000;
+      border: 2px solid #333;
+      padding: 10px;
+      background-color: #eaeaea;
+    }
+
+    table.custom-tbl {
+      border: 1px solid;
+    }
+
+    table.custom-tbl th {
+      border: 1px solid;
+      background-color: rgb(99, 209, 209);
+    }
+
+    table.custom-tbl td {
+      border: 1px solid;
+      background-color: #f1e686a8;
+    }
+  </style>
+
+  <title>Project 0: Images of the Russian Empire in RGB</title>
+
+<body>
+  <hr>
+  <h1 align="middle">CS 180: Computer Graphics and Imaging, Fall 2024</h1>
+  <h1 align="middle">Project 1: Images of the Russian Empire in RGB</h1>
+  <h2 align="middle">Zackary Oon</h2>
+  <hr>
+  <br>
+  
+
+  <div>
+    <h2 align="middle">Overview</h2>
+    <blockquote>
+      In this project, we are given a set of images of the Russian Empire. Each scene contains 3 images, 
+      each of which are grayscale, but are taken through a red, a green, and a blue filter. The task is to
+      create a fully colorized (RGB) image from these inputs.
+    </blockquote>
+  </div>
+  <hr>
+  <br>
+
+  <h2 align="middle">Approach</h2>
+  
+  <h3 align="middle">General Steps</h3>
+  <blockquote>
+    <p>To construct an RGB image from the 3 grayscale images (taken via the R, G, B color filters), I took the following steps:</p>
+
+    <ol>
+      <li>Break up the concatenated images (stored vertically in the order of B, G, R, from top to bottom).</li>
+      <li>Crop the images in all directions (I did so by 10% on each side) to remove any padding that may interfere with the similarity metrics.</li>
+      <li>Using the blue image as the baseline, align the red and green images to it. Discussion on alignment will be in the section below.</li>
+      <li>Stack the aligned red, green, and blue images, in that order from top to bottom, to form the RGB image.</li>
+    <ol/>
+  </blockquote>  
+
+  <h3 align="middle">Alignment</h3>
+  <blockquote>
+      <p>When talking about alignment, imagine one image staying still, and the other image is sliding on top of it, to find the best alignment.There were two ways I aligned the image:</p>
+      <ol>
+        <li>A brute force alignment method that checks the displacements, from -15 to +15 pixels in both the x and y directions, to see which displacement aligned the images the best.</li>
+        <li>Using an image pyramid, which downsamples the image by a factor of 2 each level. Images are recursively downsampled until they reach less than or equal to 500 pixels in both dimensions.</li>
+      </ol>
+      <p>
+      For the image pyramid, At every level, we'll use the brute force alignment subroutine in the first bullet point; however, we will only check displacements of -15 to +15 pixels 
+      at the smallest image level. For the remaining levels (popping up from the recursive stack), we will check displacements of -3 to +3 pixels in the x and y directions,
+      based around the displacement returned from the previously executed recursive call (i.e. based around the coarser estimate obtained from the downsampled image).
+      </p>
+    
+  </blockquote>
+
+  <h3 align="middle">Values and Metrics</h3>
+    <blockquote> 
+      <p>Note that when checking alignments, rather than checking the pixel magnitudes, I instead used the edges in the images as the values to compare. 
+        This is due to the pixel values in corresponding positions in each channel (R, G, B) differing. This ensures that we match by the forms in the image.
+        For example, the pixel value at position (0,0) in the red channel of the blue image will be the same as the pixel value at position (0,0) in the red channel of the red image.</p>
+      <p>I tried both Sobel edge detection and Canny edge detection — Canny edge detection performed better. Note that when performing edge detection, 
+        it is important to denoise the image by doing a bit of blurring first (I used Gaussian blur).</p>
+      <p>For the similarity metric, I tried L2 distance, Normalized Cross Correlation (NCC), and the Structural Similarity Index Measure (SSIM). 
+        L2 did the worst, while NCC and SSIM both did pretty well (and were similar between each other). SSIM took longer to run than NCC.</p>
+    </blockquote>
+
+  <h2 align="middle">Problems</h2>
+  <blockquote>
+    The pyramid was required to correctly align the larger .tif images efficiently, and I ran into a couple issues during implementation:
+    <ol>
+      <li>First, when using cv.Canny(), it requires uint8 values. Casting with np.uint8 didn't work, while skimage.uitl.img_as_ubyte did. Using the former 
+        would lead to a blank image.</li>
+      <li> Most egregiously, during the implementation of my pyramid, I had initially forgot to include the very last layer of the 
+        alignment (i.e. the original image didn't have an alignment step -- I only aligned up to the half-size image before that). Including the last, largest layer 
+        made the images align much better.</li>
+    </ol>  
+  </blockquote>
+  
+  <h2 align="middle">Results</h2>
+    <blockquote>Note that the displacements will be given as "Channel: [x, y]" Where "Channel" is either "Red" or "Green", 
+      x = the horizontal displacement, and y = the vertical displacement.</blockquote>
+    <div align="middle">
+      <table style="width:100%">
+        <tbody>
+          <tr align="center">
+            <td>
+              <img src="./images/side_trees.jpg" align="middle" width="500vw">
+              <figcaption>Side Trees, Green: [12, 37], Red:[37, 86] (My pick)</figcaption>
+            </td>
+            <td>
+              <img src="./images/emir.jpg" align="middle" width="500vw">
+              <figcaption>Emir, Green: [24, 49], Red:[40, 107]</figcaption>
+            </td>
+          </tr>
+          <tr align="center">
+            <td>
+              <img src="./images/monastery.jpg" align="middle" width="500vw">
+              <figcaption>Monastery, Green: [2, -3], Red:[9, 97]</figcaption>
+            </td>
+            <td>
+              <img src="./images/grass_water.jpg" align="middle" width="500vw">
+              <figcaption>Grass Water, Green: [-2, 43], Red:[9, 97] (My pick)</figcaption>
+            </td>
+          </tr>
+          <tr align="center">
+            <td>
+              <img src="./images/church.jpg" align="middle" width="500vw">
+              <figcaption>Church, Green: [4, 24], Red:[-4, 58]</figcaption>
+            </td>
+            <td>
+              <img src="./images/three_generations.jpg" align="middle" width="500vw">
+              <figcaption>Three Generations, Green: [19, 55], Red:[9, 111]</figcaption>
+            </td>
+          </tr>
+          <tr align="center">
+            <td>
+              <img src="./images/melons.jpg" align="middle" width="500vw">
+              <figcaption>Melons, Green: [10, 80], Red:[15, 122] (Misaligned, see below)</figcaption>
+            </td>
+            <td>
+              <img src="./images/onion_church.jpg" align="middle" width="500vw">
+              <figcaption>Onion Church, Green: [24, 52], Red:[35, 107]</figcaption>
+            </td>
+          </tr>
+          <tr align="center">
+            <td>
+              <img src="./images/tree_passage.jpg" align="middle" width="500vw">
+              <figcaption>Tree Passage, Green: [-17, 28], Red:[-34, 65] (My pick)</figcaption>
+            </td>
+            <td>
+              <img src="./images/train.jpg" align="middle" width="500vw">
+              <figcaption>Train, Green: [9, 43], Red:[29, 86]</figcaption>
+            </td>
+          </tr>
+          <tr align="center">
+            <td>
+              <img src="./images/tobolsk.jpg" align="middle" width="500vw">
+              <figcaption>Tobolsk, Green: [3, 3], Red:[3, 6]</figcaption>
+            </td>
+            <td>
+              <img src="./images/icon.jpg" align="middle" width="500vw">
+              <figcaption>Icon, Green: [16, 39], Red:[23, 90]</figcaption>
+            </td>
+          </tr>
+          <tr align="center">
+            <td>
+              <img src="./images/cathedral.jpg" align="middle" width="500vw">
+              <figcaption>Cathedral, Green: [2, 5], Red:[3, 12]</figcaption>
+            </td>
+            <td>
+              <img src="./images/self_portrait.jpg" align="middle" width="500vw">
+              <figcaption>Self Portrait, Green: [29, 77], Red:[71, 133] (Misaligned, see below)</figcaption>
+            </td>
+          </tr>
+          <tr align="center">
+            <td>
+              <img src="./images/harvesters.jpg" align="middle" width="500vw">
+              <figcaption>Harvesters, Green: [18, 60], Red:[14, 124]</figcaption>
+            </td>
+            <td>
+              <img src="./images/sculpture.jpg" align="middle" width="500vw">
+              <figcaption>Sculpture, Green: [-10, 33], Red:[-27, 140]</figcaption>
+            </td>
+          </tr>
+          <tr align="center"></tr>
+            <td>
+              <img src="./images/lady.jpg" align="middle" width="500vw">
+              <figcaption>Lady, Green: [10, 56], Red:[13, 120]</figcaption>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h2>Explanations on Misalignment</h2>
+    <blockquote>
+      <p>There were two images that were noticeably misaligned. The image captioned "melons" and the image captioned "self portrait".</p>
+      <p>Upon further inspection, the potential reason why the both images failed is likely pretty similar. When looking at the edge detection results, we
+         realize both images have highly repetitive patterns of edges (many melons and stones). Additionaly, for the melons, because it is dark inside
+         the vendor's stall, not all the edges of the melons are picked up. The lack of contrast for the self portrait also makes it challenging to align.</p>
+
+    </blockquote>
