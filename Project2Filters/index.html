@@ -151,6 +151,8 @@
   We then add them. The higher frequencies are more prominent upclose, and the lower frequencies are more 
   prominent farther away, giving us the impression of a hybrid image. Note the failed 3rd example, as the positions are different,
   which tells us that this approach doesn't work well to show displacement between images.
+  <br></br>
+  Note that the first image is the lower frequency image, and the second image is the higher frequency image.
 </blockquote>
 
 <table>
@@ -231,6 +233,9 @@
   need to combine the laplacian stacks of the images using the weighting given by the mask's gaussian stacks. 
   Finally, given the intermediate blended images at each level, add them up for the final result.
 
+  <br></br>
+  Note that the cats don't seem to blend as well as expected due to their head size being different. I decided to keep this in 
+  since it displays how the multi-resolution blending requires very curated iamges (even if the two objects/things are already similar)
 </blockquote>
 
 
@@ -284,7 +289,9 @@
 
 <p align="center">
   <img src="images/BlendedCatGallery.png" alt="Blended Cat Gallery" width="600"><br>
- 
+  <p>Blended Cat Gallery</p>
+</p>
+
   <table>
     <tr>
       <td align="center">
