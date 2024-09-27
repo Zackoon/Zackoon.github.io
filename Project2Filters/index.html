@@ -1,0 +1,307 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0066)https://static.us.edusercontent.com/files/NJ3fac61dpOrcWX1B1DyZasf -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project 2: Fun with Filters and Frequencies!</title>
+<style>
+  body {
+    background-color: #bac3c3;
+    padding: 50px;
+    max-width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+    text-align: center;
+  }
+  kbd {
+    color: #121212;
+  }
+  blockquote {
+    color: #000000;
+    border: 2px solid #333;
+    padding: 10px;
+    background-color: #eaeaea;
+  }
+  img {
+    border-radius: 8px;
+  }
+  table {
+    margin: auto;
+  }
+  td {
+    padding: 10px;
+  }
+  p {
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<hr>
+<h1>CS 180: Computer Graphics and Imaging, Fall 2024</h1>
+<h1>Project 2: Fun with Filters and Frequencies!</h1>
+<h2>Zackary Oon</h2>
+<hr>
+<br>
+
+<h2>Overview</h2>
+<blockquote>
+  In this project, we deal with finite difference operators and Derivative of Gaussian Filters (DoG) to do edge detection. 
+  Then, we deal with image sharpening, hybrid images, and multiresolution blending. 
+
+  The most important thing I learned from this project was how algorithms could be. For example, the multi-resolution 
+  blending works well with the apple and orange images given, but for other images, you have to really choose carefully, else 
+  the seam colors either don't blend well, the images are offset (even with alignment) due to different object dimensions, etc.
+</blockquote>
+
+<h2>Part 1: Fun with Filters</h2>
+
+<h3>Part 1.1: Finite Difference Operator</h3>
+<blockquote>
+  Here we use the finite difference operators (a vector of 1 and -1, of dimension 2x1 for Dx and 1x2 for Dy) and convolve
+  them with the cameraman image, to view the partial derivative in the x and y directions of the cameraman image. With these, we then 
+  obtain a gradient magnitude image by adding the magnitudes squared, of the gradient values in the Dx and Dy images, then taking the square root. 
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/dx_cameraman.jpg" alt="dx_cameraman" width="300"><br>
+      <p>Cameraman's partial derivative in the x direction</p>
+    </td>
+    <td align="center">
+      <img src="images/dy_cameraman.jpg" alt="dy_cameraman" width="300"><br>
+      <p>Cameraman's partial derivative in the y direction</p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="images/1-1-gradient_mag.jpg" alt="Gradient Magnitude" width="300"><br>
+      <p>Gradient magnitude of Cameraman image</p>
+    </td>
+  </tr>
+</table>
+
+<h3>Part 1.2: Derivative of Gaussian (DoG)</h3>
+<blockquote>
+  The edges are thicker in this part, compared to 1.1. 
+  With this gaussian blurring step, there's less noise in the edge image, and it doesn't sacrifice the edge visibilty.
+  Note that the difference between these two images is on the left, we run a gaussian blur, then do what was described in part 1, 
+  and on the right, we do convolution between the Dx with the Gaussian Kernel, and Dy with the Gaussian Kernel, then convolve that with the cameraman image.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/1-2_blurred_edge_cameraman.jpg" alt="Blurred Edge Cameraman" width="300"><br>
+      <p>Blurred edge of Cameraman image</p>
+    </td>
+    <td align="center">
+      <img src="images/1-2_DoG_edge_cameraman.jpg" alt="DoG Edge Cameraman" width="300"><br>
+      <p>DoG edge detection on Cameraman image</p>
+    </td>
+  </tr>
+</table>
+
+
+<hr>
+
+<h2>Part 2: Fun with Frequencies!</h2>
+
+<h3>Part 2.1: Image "Sharpening"</h3>
+<blockquote>
+  Here, we extract the higher frequencies by doing the original image - the low pass filtered image. 
+  Then, we multiply the high frequency image by some alpha value (in our case, 2), and add that to the original image
+  to obtain a sharpened image.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/taj.jpg" alt="Original Taj Mahal" width="300"><br>
+      <p>Original Taj Mahal</p>
+    </td>
+    <td align="center">
+      <img src="images/taj_sharpened.jpg" alt="Sharpened Taj Mahal" width="300"><br>
+      <p>Sharpened Taj Mahal</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/botw.jpg" alt="Original Breath of the Wild" width="300"><br>
+      <p>Original Breath of the Wild</p>
+    </td>
+    <td align="center">
+      <img src="images/botw_sharpened.jpg" alt="Sharpened Breath of the Wild" width="300"><br>
+      <p>Sharpened Breath of the Wild</p>
+    </td>
+  </tr>
+</table>
+
+
+<h3>Part 2.2: Hybrid Images</h3>
+<blockquote>
+  Here, we have two images, one that is designated to contain mainly its high frequencies and the other containing its low frequencies.
+  We then add them. The higher frequencies are more prominent upclose, and the lower frequencies are more 
+  prominent farther away, giving us the impression of a hybrid image. Note the failed 3rd example, as the positions are different,
+  which tells us that this approach doesn't work well to show displacement between images.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/grouper.jpg" alt="Grouper" width="300"><br>
+      <p>Grouper</p>
+    </td>
+    <td align="center">
+      <img src="images/goldfishpog.jpg" alt="Goldfish" width="300"><br>
+      <p>Goldfish</p>
+    </td>
+    <td align="center">
+      <img src="images/hybrid-grouper-goldfishpog.jpg" alt="Hybrid Grouper and Goldfish" width="300"><br>
+      <p>Hybrid of Grouper and Goldfish</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/apple1.jpg" alt="Apple" width="300"><br>
+      <p>Apple</p>
+    </td>
+    <td align="center">
+      <img src="images/orange1.jpg" alt="Orange" width="300"><br>
+      <p>Orange</p>
+    </td>
+    <td align="center">
+      <img src="images/hybrid-apple1-orange1.jpg" alt="Hybrid Apple and Orange" width="300"><br>
+      <p>Hybrid of Apple and Orange</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/sprintstart.jpg" alt="Sprint Start" width="300"><br>
+      <p>Sprint Start</p>
+    </td>
+    <td align="center">
+      <img src="images/springcontinue.jpg" alt="Sprint Continue" width="300"><br>
+      <p>Sprint Continue</p>
+    </td>
+    <td align="center">
+      <img src="images/hybrid-sprintstart-springcontinue.jpg" alt="Hybrid Sprint Start and Continue" width="300"><br>
+      <p>Hybrid of Sprint Start and Continue (failed example)</p>
+    </td>
+  </tr>
+</table>
+
+
+<h4>Log Magnitude Fourier Plots</h4>
+<blockquote>
+  This is the log magnitude fourier plots of the 1st example (the fishes).
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/hybrid_fourier.jpg" alt="Hybrid Fourier" width="300"><br>
+      <p>Hybrid Image Fourier Transform</p>
+    </td>
+    <td align="center">
+      <img src="images/grouper_fourier.jpg" alt="Grouper Fourier" width="300"><br>
+      <p>Grouper Image Fourier Transform</p>
+    </td>
+    <td align="center">
+      <img src="images/goldfish_fourier.jpg" alt="Goldfish Fourier" width="300"><br>
+      <p>Goldfish Image Fourier Transform</p>
+    </td>
+  </tr>
+</table>
+
+
+<h3>Part 2.3 and 2.4 Gaussian and Laplacian Stacks and Multi-Resolution Blending</h3>
+<blockquote>
+  Here, we make suse of gaussian and laplacian stacks (like the pyramids, but rather than subsampling, we just keep it the same size).
+  Note that gaussian stacks show the cumulative blurring of the image as we go further and further,
+  while the laplacian stack shows the difference between the current level and its next level. 
+  We generate these stacks for the two images and the to be applied. To finally combine them, you just 
+  need to combine the laplacian stacks of the images using the weighting given by the mask's gaussian stacks. 
+  Finally, given the intermediate blended images at each level, add them up for the final result.
+
+</blockquote>
+
+
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/apple.jpg" alt="Apple" width="300"><br>
+      <p>Apple</p>
+    </td>
+    <td align="center">
+      <img src="images/orange.jpg" alt="Orange" width="300"><br>
+      <p>Orange</p>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <img src="images/GaussStackGallery.png" alt="Gaussian Stack Gallery" width="1000"><br>
+    <p>Gaussian Stack Gallery</p>
+  </tr>
+  <tr></tr>
+    <img src="images/LaplacianStackGallery.png" alt="Laplacian Stack Gallery" width="1000"><br>
+    <p>Laplacian Stack Gallery</p>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="images/orapple.jpg" alt="Blended Apple and Orange" width="300"><br>
+  <p>Blended Apple and Orange (Orapple)</p>
+</p>
+
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/orangecat.jpg" alt="Orange Cat" width="300"><br>
+      <p>Orange Cat</p>
+    </td>
+    <td align="center">
+      <img src="images/browncat.jpg" alt="Brown Cat" width="300"><br>
+      <p>Brown Cat</p>
+    </td>
+    <td align="center">
+      <img src="images/orangecat-browncat-blend.jpg" alt="Blended Cat" width="300"><br>
+      <p>Blended Orange and Brown Cat</p>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="images/BlendedCatGallery.png" alt="Blended Cat Gallery" width="600"><br>
+ 
+  <table>
+    <tr>
+      <td align="center">
+        <img src="images/vaporeon.jpg" alt="Vaporeon" width="300"><br>
+        <p>Vaporeon</p>
+      </td>
+      <td align="center">
+        <img src="images/waterbottle.jpg" alt="Water Bottle" width="300"><br>
+        <p>Water Bottle</p>
+      </td>
+      <td align="center">
+        <img src="images/vaporeon-waterbottle-blend.jpg" alt="Blended Vaporeon and Water Bottle" width="300"><br>
+        <p>Blended Vaporeon and Water Bottle</p>
+      </td>
+    </tr>
+  </table>
+
+  
+  </body>
+  </html>
