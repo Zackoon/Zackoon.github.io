@@ -1,0 +1,271 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project 3: Face Morphing</title>
+<style>
+  body {
+    background-color: #bac3c3;
+    padding: 50px;
+    max-width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+    text-align: center;
+  }
+  kbd {
+    color: #121212;
+  }
+  blockquote {
+    color: #000000;
+    border: 2px solid #333;
+    padding: 10px;
+    background-color: #eaeaea;
+  }
+  img {
+    border-radius: 8px;
+  }
+  table {
+    margin: auto;
+  }
+  td {
+    padding: 10px;
+  }
+  p {
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<hr>
+<h1>CS 180: Computer Vision and Computational Photography, Fall 2024</h1>
+<h1>Project 3: Face Morphing</h1>
+<h2>Zackary Oon</h2>
+<hr>
+<br>
+
+<h2>Overview</h2>
+<blockquote>
+  In this project, we explore face moprhing. This is done by warping the image shape and then cross-dissolving the image colors.
+  As you'll see below, we'll be making some pretty smooth facial morphs!
+</blockquote>
+
+<h2>Part 1: Defining Correspondences</h2>
+<blockquote>
+  The first step to a successful morph is a successful warp. To do this, we must define key corresponding points
+  between each face. This is to mark where in each image the eyes are for each person, the ears, the lips, the eyebrows, etc.
+  <br><br>
+  The correspondences shown below are the average positions between my "key points" and Jackie Chan's "key points". 
+  This is so that both images morph towards a "middle" image. With these correspondences now defined, we perform Delaunay Triangulation
+  (beneficial as it generally helps prevent too-skinny triangles), which now gives us discrete triangles to locally warp. 
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/1_and_5_zack2_cropped.png" alt="My Face with Keypoints" width="300"><br>
+      <p>My Face with Keypoints</p>
+    </td>
+    <td align="center">
+      <img src="images/2_and_7_jackie_cropped.png" alt="Jackie's Face with Keypoints" width="300"><br>
+      <p>Jackie's Face with Keypoints</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/3_my_triangulation.png" alt="My Face with Triangulation" width="300"><br>
+      <p>My Face with Triangulation</p>
+    </td>
+    <td align="center">
+      <img src="images/4_jackie_triangulation.png" alt="Jackie's with Triangulation" width="300"><br>
+      <p>Jackie's Face with Triangulation</p>
+    </td>
+  </tr>
+</table>
+
+<h2>Part 2: Computing the "Mid-way Face"</h2>
+<blockquote>
+  Note that both images use the same triangulation indices! 
+  In other words, if in my image, there's a triangle with vertices made with the inner portion
+  of my eyebrows, in Jackie Chan's image, there will also be a triangle made from the inner portion of his eyebrows
+  (i.e. his corresponding key points). 
+  <br><br>
+  We will warp my face to the "middle-ground" triangulation defined (i.e. using the averaged corresponding positions between the two images),
+  and we will also warp Jackie Chan's face to the "middle-ground" triangulation. Note that the middle-ground triangles 
+  have different shaped triangles than both mine and Jackie Chan's faces.
+  <br><br>
+  To get the warp, we iterate through the corresponding triangles between the image and the middle-ground triangulation, 
+  performing an affine transform from the image's triangle -> the corresponding middle-ground triangle. To get the colors to match
+  we just take a weighted sum (linear interpolation) between the middle-ground images.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/1_and_5_zack2_cropped.png" alt="My Original Face" width="300"><br>
+      <p>My Original Face</p>
+    </td>
+    <td align="center">
+      <img src="images/6_jackie_oon.png" alt="Mid-way Face" width="300"><br>
+      <p>Mid-way Face</p>
+    </td>
+    <td align="center">
+      <img src="images/2_and_7_jackie_cropped.png" alt="Jackie's Original Face" width="300"><br>
+      <p>Jackie's Original Face</p>
+    </td>
+  </tr>
+</table>
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/0_my_face_middle.png" alt="My Face Mid-way" width="300"><br>
+      <p>My Face in the Middle Geometry</p>
+    </td>
+    <td align="center">
+      <img src="images/0_jackie's_face_middle.png" alt="Mid-Jackie's Face Mid-way" width="300"><br>
+      <p>Jackie's Face in the Middle Geometry</p>
+    </td>
+  </tr>
+</table>
+
+<h2>Part 3: The Morph Sequence</h2>
+<blockquote>
+  Here's the morphing process as a gif! All that's going on is we're creating hybrid-images in each frame, 
+  where we approach and reach Jackie Chan's geometry and pixel colors, then go back to my geometry and pixel colors.
+</blockquote>
+
+<p align="center">
+  <img src="images/8_zackie_chan.gif" alt="Morph Sequence GIF" width="600"><br>
+  <p>Morph Sequence between My Face and Jackie's Face</p>
+</p>
+
+<h2>Part 4: The "Mean face" of a population</h2>
+<blockquote>
+  Next, we use the <a href="https://web.archive.org/web/20210305094647/http://www2.imm.dtu.dk/~aam/datasets/datasets.html">Danes dataset of annotated faces.</a>
+  The alignment points have already beeen defined, and so we obtain the average face of the population by: 
+  <ol>
+    <li>Obtaining the "middle-ground" of key correspondence point positions (just average the positions)</li>
+    <li>For each face in the dataset, warp them towards this average face shape, as described in the previous part.</li>
+    <li>With these warped face shapes, take the average across all of them (i.e. cross-dissolve)</li>
+  </ol>
+  <br>
+  For this upcoming part, here's also my face in gray-scale for reference.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/9_averaged_face.png" alt="Average Face" width="300"><br>
+      <p>Average Face of the Population</p>
+    </td>
+    <td align="center">
+      <img src="images/10_average_shapes.png" alt="Faces Warped to Average Shape" width="300"><br>
+      <p>Faces Warped to Average Shape</p>
+    </td>
+    <td align="center">
+      <img src="images/11_grayme.png" alt="My Face Grayscale" width="300"><br>
+      <p>My Face in Grayscale</p>
+    </td>
+  </tr>
+</table>
+
+<blockquote>
+  We now warp the average face to my geometry, then show how it looks when cross-dissolved with my original face.
+  <br><br>
+  Similarly, we can also observe my face warped to the average geometry and show how it looks when cross-dissolved with the original average face.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/12_avg_to_me.png" alt="Average Face Warped to My Geometry" width="300"><br>
+      <p>Average Face Warped to My Geometry</p>
+    </td>
+    <td align="center">
+      <img src="images/13_avg_me_geometry.png" alt="Average Face with My Geometry Cross-dissolved with My Face" width="300"><br>
+      <p>Average Face with My Geometry Cross-dissolved with My Face</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/14_me_to_avg.png" alt="My Face Warped to Average Face Geometry" width="300"><br>
+      <p>My Face Warped to Average Face Geometry</p>
+    </td>
+    <td align="center">
+      <img src="images/15_me_avg_geometry.png" alt="Average Geometry" width="300"><br>
+      <p>My Face Warped to Average Geometry Cross-dissolved with Average Face</p>
+    </td>
+  </tr>
+</table>
+
+<h2>Part 5: Caricatures: Extrapolating from the Mean</h2>
+<blockquote>
+  Here, we create a caricature of my facial features. This is done via linear "extrapolation." Suppose we have the 
+  lerp function which does (1 - t) * im1 + (t) * im2, if you choose a t > 1, then you will effectively be subtracting
+  im1 from im2, while also adding <strong>more</strong> of im2 to the result. Here, I chose a t = 3. The image I subtracting
+  from my own is the top left image from the above section -- the average face warped to my geometry.
+</blockquote>
+
+<p align="center">
+  <img src="images/16_caricature.png" alt="Caricature of My Face" width="400"><br>
+  <p>Caricature of My Face</p>
+</p>
+
+<h2>Part 6: Bells and Whistles: Me → Average Woman Model</h2>
+<blockquote>
+  Finally, we perform an interesting morph between my face and the average (Italy fashion) female model face.
+  Here, I display how the morph towards mainly geometry and towards mainly appearance (pixel colors) look via the gifs.
+  If you're interested, at the bottom, there's also images for my face colors, fully on the woman model geometry, and vice versa.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/17_zack2_cropped-pt6.png" alt="My Face" width="300"><br>
+      <p>My Face</p>
+    </td>
+    <td align="center">
+      <img src="images/18_model.jpeg" alt="Average Woman Model" width="300"><br>
+      <p>Average Woman Model</p>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/19_morph_appearance.gif" alt="Morphing Appearance" width="300"><br>
+      <p>Morphing Appearance (towards 100% of the woman's appearance, with a slight shift towards the woman model's geometry)</p>
+    </td>
+    <td align="center">
+      <img src="images/20_morph_geometry.gif" alt="Morphing Geometry" width="300"><br>
+      <p>Morphing Geometry (towards 100% of the woman's geometry, with a slight shift towards the woman model's pixel colors)</p>
+    </td>
+    <td align="center">
+      <img src="images/21_me_to_model.gif" alt="Full Morph Sequence" width="300"><br>
+      <p>Full Morph Sequence</p>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/-1_me_pt6_to_woman_geometry.png" alt="My Face, Fully Woman Model Geometry" width="300"><br>
+      <p>My Face colors, fully on the Woman Model Geometry</p>
+    </td>
+    <td align="center">
+      <img src="images/-1_woman_color_on_my_face.png" alt="Woman Model's colors, fully on My Face Geometry" width="300"><br>
+      <p>Woman Model's colors, fully on My Face Geometry</p>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>
