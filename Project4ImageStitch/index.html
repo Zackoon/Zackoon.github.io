@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project 4: Image Warping and Mosaicking</title>
+<style>
+  body {
+    background-color: #bac3c3;
+    padding: 50px;
+    max-width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+    text-align: center;
+  }
+  kbd {
+    color: #121212;
+  }
+  blockquote {
+    color: #000000;
+    border: 2px solid #333;
+    padding: 10px;
+    background-color: #eaeaea;
+  }
+  img {
+    border-radius: 8px;
+  }
+  table {
+    margin: auto;
+  }
+  td {
+    padding: 10px;
+  }
+  p {
+    text-align: center;
+  }
+  .centered {
+      text-align: center;
+      margin-bottom: 20px; /* Adds space between each section */
+    }
+</style>
+</head>
+<body>
+<hr>
+<h1>CS 180: Computer Vision and Computational Photography, Fall 2024</h1>
+<h1>Project 4: Image Warping and Mosaicking</h1>
+<h2>Zackary Oon</h2>
+<hr>
+<br>
+
+<h2>Overview</h2>
+<blockquote>
+  In this project, we're tasked with taking images and stitching them together. To do this we go through the steps of:
+  <ol>
+    <li>Defining correspondence points between the images</li>
+    <li>Using the correspondence points to create a transform that warps one image to another</li>
+    <li>Blending the images into a mosaic (think of Project 2!)</li>
+  </ol>
+
+  Before continuing, we can formalize this a bit. If we have <code>im1</code> and <code>im2</code>, here's the math for 
+  1 set of their correspondence points assuming we are going from <code>im1</code> to <code>im2</code> (note <code>im1</code>'s point is <code>u</code> and <code>im2</code>'s point is <code>v</code>):
+</blockquote>
+
+<div class="centered">
+    <img src="images/math1.png" alt="Math 1" width="500"><br>
+    <p>Blue highlights correspond to translation, Yellow corresponds to scaling and rotation (and potential shearing), and Red corresponds to effects from perspective distortion</p>
+  </div>
+  
+  <div class="centered">
+    <img src="images/math2.png" alt="Math 2" width="500"><br>
+    <p>This formulation tells us the value of w (bottom row dot product with the RHS vector)</p>
+  </div>
+  
+  <div class="centered">
+    <img src="images/math3.png" alt="Math 3" width="500"><br>
+    <p>We can plug this value of w into the equations for v1 and v2, and do some algebra...</p>
+  </div>
+  
+  <div class="centered">
+    <img src="images/math4.png" alt="Math 4" width="500"><br>
+    <p>Rewriting this, we now see we get 2 equations per correspondence point, and are solving for a through h (parameters of the Homography matrix)</p>
+  </div>
+
+  <blockquote>
+    With more than 4 correspondence points defined, the system becomes overdetermined, so we must use least squares to find an approximate best solution for these parameters.
+      </blockquote>
+
+  <h2>Part 1: Shoot and Pictures</h2>
+  <blockquote>
+      Here are the pictures we'll be using.
+  </blockquote>
+
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/pt_1_mob_psycho_1.png" alt="Mob Psycho Image 1" width="500"><br>
+      <p>Mob Psycho Image 1</p>
+    </td>
+    <td align="center">
+      <img src="images/pt_1_mob_psycho_2.png" alt="Mob Psycho Image 2" width="500"><br>
+      <p>Mob Psycho Image 2</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/pt_1_window_1.png" alt="Window Image 1" width="500"><br>
+      <p>Window Image 1</p>
+    </td>
+    <td align="center">
+      <img src="images/pt_1_window_2.png" alt="Window Image 2" width="500"><br>
+      <p>Window Image 2</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/amongus1.png" alt="Among Us Image 1" width="500"><br>
+      <p>Among Us Image 1</p>
+    </td>
+    <td align="center">
+      <img src="images/amongus2.png" alt="Among Us Image 2" width="500"><br>
+      <p>Among Us Image 2</p>
+    </td>
+  </tr>
+</table>
+
+<h2>Part 2: Recover Homographies</h2>
+<blockquote>
+  We've defined correspondence points between the images as shown below, and are now solving for the homogrpahy matrix, <code>H</code>, as described in the beginning.
+  Note again that because we get 2 "constraints"/equations per correspondence point, we the system
+  becomes overdetermined (with > 4 correspondence points) and thus we must use least squares.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/mob_1_corresp.png" alt="Mob Psycho Image 1 with Correspondences" width="500"><br>
+      <p>Mob Psycho Image 1 with Correspondences</p>
+    </td>
+    <td align="center">
+      <img src="images/mob_2_corresp.png" alt="Mob Psycho Image 2 with Correspondences" width="500"><br>
+      <p>Mob Psycho Image 2 with Correspondences</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/window_1_corresp.png" alt="Window Image 1 with Correspondences" width="500"><br>
+      <p>Window Image 1 with Correspondences</p>
+    </td>
+    <td align="center">
+      <img src="images/window_2_corresp.png" alt="Window Image 2 with Correspondences" width="500"><br>
+      <p>Window Image 2 with Correspondences</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/amongus1_corresp.png" alt="Among Us Image 1 with Correspondences" width="500"><br>
+      <p>Among Us Image 1 with Correspondences</p>
+    </td>
+    <td align="center">
+      <img src="images/amongus2_corresp.png" alt="Among Us Image 2 with Correspondences" width="500"><br>
+      <p>Among Us Image 2 with Correspondences</p>
+    </td>
+  </tr>
+</table>
+
+<blockquote>
+  Here are the warped images (note that the middle image is very warped due to covering a very large field of view -- almost 180 degrees.):
+
+</blockquote>
+<table>
+    <tr>
+      <td align="center">
+        <img src="images/mob_premosaic1.png" alt="Warped Mob Psycho Image" width="300"><br>
+        <p>Warped  Mob Psycho Image</p>
+      </td>
+      <td align="center">
+        <img src="images/window_premosaic1.png" alt="Warped Window Image" width="300"><br>
+        <p>Warped  Window Image</p>
+      </td>
+      <td align="center">
+        <img src="images/amongus_premosaic1.png" alt="Warped Among Us Image" width="300"><br>
+        <p>Warped Among Us Image</p>
+      </td>
+    </tr>
+  </table>
+
+<h2>Part 3: Image Rectification</h2>
+<blockquote>
+  On a more specific note (and to illustrate the concept better), with what we've done above, 
+  we can "rectify" a known rectangle in an image. The idea is that you define the 4 corners of the rectangle we 
+  would like to look at "head-on", and map that to a rectangle. 
+
+  In this image, note how the rectangle is shaped into a trapezoid. After warping it to a rectangle (with some reasonable aspect ratio),
+  it becomes rectangular.
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/iphone.png" alt="iPhone Case" width="500"><br>
+      <p>iPhone Case</p>
+    </td>
+    <td align="center">
+        <img src="images/phone_corresp.png" alt="iPhone Case with Correspondences" width="500"><br>
+        <p>iPhone Case with Correspondences</p>
+      </td>
+    
+  </tr>
+</table>
+<table>
+    <tr>
+        <td align="center">
+            <img src="images/warped_phone_cropped.png" alt="Rectified iPhone Case" width="1000"><br>
+            <p>Rectified iPhone Case</p>
+          </td>
+      </tr>
+</table>
+
+<h2>Part 4: Blend the Images into a Mosaic</h2>
+<blockquote>
+  To create a mask that will blend the images correctly, we can:
+  <ol>
+    <li>Binarize the image to note where the actual image content is and where's the unused background</li>
+    <li>Use a distance transform, which gives us the distance of the pixel from the background (black pixels)</li>
+    <li>Obtain a mask by doing <code>dist_transform1 > dist_transform2</code></li>
+    <li>Blurring this mask to soften the edges</li>
+    <li>And finally doing image blending using the Laplacian Stack as described in Project 2. We can do as many layers as we'd like, but 2 layers is sufficient. </li>
+  </ol>
+</blockquote>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/mob_dt1.png" alt="Mob Psycho Distance Transform 1" width="300"><br>
+      <p>Mob Psycho Distance Transform 1</p>
+    </td>
+    <td align="center">
+      <img src="images/mob_dt2.png" alt="Mob Psycho Distance Transform 2" width="300"><br>
+      <p>Mob Psycho Distance Transform 2</p>
+    </td>
+    <td align="center">
+      <img src="images/mob_blur.png" alt="Mob Psycho Blurred Mask" width="300"><br>
+      <p>Mob Psycho Blurred Mask</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/window_dt1.png" alt="Window Distance Transform 1" width="300"><br>
+      <p>Window Distance Transform 1</p>
+    </td>
+    <td align="center">
+      <img src="images/window_dt2.png" alt="Window Distance Transform 2" width="300"><br>
+      <p>Window Distance Transform 2</p>
+    </td>
+    <td align="center">
+      <img src="images/window_blur.png" alt="Window Blurred Mask" width="300"><br>
+      <p>Window Blurred Mask</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/amongus_dt1.png" alt="Among Us Distance Transform 1" width="300"><br>
+      <p>Among Us Distance Transform 1</p>
+    </td>
+    <td align="center">
+      <img src="images/amongus_dt2.png" alt="Among Us Distance Transform 2" width="300"><br>
+      <p>Among Us Distance Transform 2</p>
+    </td>
+    <td align="center">
+      <img src="images/amongus_blur.png" alt="Among Us Blurred Mask" width="300"><br>
+      <p>Among Us Blurred Mask</p>
+    </td>
+  </tr>
+</table>
+
+<br>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/mob_blend.png" alt="Mob Psycho Blended Image" width="300"><br>
+      <p>Mob Psycho Blended Image</p>
+    </td>
+    <td align="center">
+      <img src="images/window_blend.png" alt="Window Blended Image" width="300"><br>
+      <p>Window Blended Image</p>
+    </td>
+    <td align="center">
+      <img src="images/amongus_blend.png" alt="Among Us Blended Image" width="300"><br>
+      <p>Among Us Blended Image</p>
+    </td>
+  </tr>
+</table>
+
+<blockquote>
+  Again, note how the middle image looks very warped at the left end. This is likely due to 
+  the two images covering a very large field of view (almost 180 degrees), and the homographies are better suited for smaller field of views.
+</blockquote>
+
+</body>
+</html>
